@@ -67,6 +67,11 @@ function Events(data) {
   this.event_date = newDate;
   this.summary = data.summary;
 }
+
+//--------------------------------
+// Location
+//--------------------------------
+
 //Static function
 Location.lookup = handler => {
   const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
@@ -110,6 +115,51 @@ Location.prototype.save = function(){
 };
 
 //--------------------------------
+// Weather
+//--------------------------------
+
+Weather.lookup = handler => {
+  const SQL = `SELECT * FROM weathers WHERE search_query=$1;`;
+  const values = [handler.query];
+
+  return client.query(SQL, values)
+    .then(results => {
+      if(results.rowCount > 0){
+        handler.cacheHit(results);
+      }else{
+        handler.cacheMiss(results);
+      }
+    })
+    .catch(console.error);
+};
+
+Weather.fetchWeather = (query) => {
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${query.latitude},${query.longitude}`;
+
+  return superagent.get(url)
+    .then(result => {
+      if(!result.body.results.length) throw 'No data';
+      let weather = new Weather(query, result.body.results[0]);
+      return weather.save()
+        .then(result => {
+          weather.id = result.rows[0].id;
+          return weather;
+        });
+    });
+};
+
+Weather.prototype.save = function(){
+  let SQL = `INSERT INTO weathers 
+    (forecast, time)
+    VALUES ($1, $2)
+    RETURNING id;`;
+
+  let values = Object.values(this);
+
+  return client.query(SQL, values);
+};
+
+//--------------------------------
 // Route Callbacks
 //--------------------------------
 let searchCoords = (request, response) => {
@@ -139,19 +189,33 @@ let searchCoords = (request, response) => {
 //   .catch(() => errorMessage());
 
 let searchWeather = (request, response) => {
-  const data = request.query.data;
-  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${data.latitude},${data.longitude}`;
-
-  return superagent.get(url)
-    .then(result => {
-      const dailyWeather = result.body.daily.data.map(day => {
-        return new Weather(day);
-      });
-
-      response.send(dailyWeather);
-    })
-    .catch(() => errorMessage());
+  const weatherHandler = {
+    query: request.query.data,
+    cacheHit: results => {
+      console.log('Got the data');
+      response.send(results[0]);
+    },
+    cacheMiss: () => {
+      console.log('Fetching');
+      Weather.fetchWeather(request.query.data)
+        .then(results => response.send(results));
+    }
+  };
+  Weather.lookup(weatherHandler);
 };
+
+// const data = request.query.data;
+// const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${data.latitude},${data.longitude}`;
+
+// return superagent.get(url)
+//   .then(result => {
+//     const dailyWeather = result.body.daily.data.map(day => {
+//       return new Weather(day);
+//     });
+
+//     response.send(dailyWeather);
+//   })
+//   .catch(() => errorMessage());
 
 let searchEvents = (request, response) => {
   let url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
