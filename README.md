@@ -5,14 +5,14 @@
 
 
 ## Number and name of feature: #1 DataBase
-* Estimate of time needed to complete: 1.5 Hour
-* Start time: 
-* Finish time: 
-* Actual time needed to complete: 
+* Estimate of time needed to complete: 1.5 hours
+* Start time: 8:20am
+* Finish time: 9:00am
+* Actual time needed to complete: 40 minutes
 
 ## Number and name of feature: #2 Server
-* Estimate of time needed to complete 
-* Start time: 
+* Estimate of time needed to complete: 3 hours
+* Start time: 9:10am
 * Finish time: 
 * Actual time needed to complete: 
 
