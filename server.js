@@ -45,6 +45,22 @@ let errorMessage = () => {
 };
 
 //--------------------------------
+// Helper functions
+//--------------------------------
+let lookup = (handler) => {
+  const SQL = `SELECT * FROM ${handler.tableName} WHERE location_id=$1`;
+
+  return client.query(SQL, [handler.location.id])
+    .then(result => {
+      if(result.rowCount > 0){
+        handler.cacheHit(result);
+      }else{
+        handler.cacheMiss();
+      }
+    })
+    .catch(errorMessage);
+};
+//--------------------------------
 // Constructors Functions
 //--------------------------------
 function Location(query, geoData) {
@@ -117,56 +133,63 @@ Location.prototype.save = function(){
 //--------------------------------
 // Weather
 //--------------------------------
+Weather.tableName = 'weathers';
+Weather.lookup = lookup;
 
-Weather.lookup = handler => {
-  const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
-  const values = [handler.query.id];
-  // console.log(values);
+Weather.prototype.save = function(id){
+  let SQL = `INSERT INTO weathers 
+    (forecast, time, location_id)
+    VALUES ($1, $2, $3)
+    RETURNING id;`;
 
-  return client.query(SQL, values)
-    .then(results => {
-      if(results.rowCount > 0){
-        handler.cacheHit(results);
-      }else{
-        // console.log(results);
-        handler.cacheMiss(results);
-      }
-    })
-    .catch(console.error);
+  let values = Object.values(this);
+  values.push(id);
+
+  return client.query(SQL, values);
 };
+// Weather.lookup = handler => {
+//   const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
+//   const values = [handler.query.id];
+//   // console.log(values);
 
-Weather.fetchWeather = (query) => {
+//   return client.query(SQL, values)
+//     .then(results => {
+//       if(results.rowCount > 0){
+//         handler.cacheHit(results);
+//       }else{
+//         // console.log(results);
+//         handler.cacheMiss(results);
+//       }
+//     })
+//     .catch(console.error);
+// };
+
+Weather.fetch = (location) => {
   // console.log(query);
-  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${query.latitude},${query.longitude}`;
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
 
   return superagent.get(url)
     .then(result => {
       // console.log(result.body);
-      if(!result.body && !result.body.daily) throw 'No data';
-      let weather = result.body.daily.data.map(day => {
-        return new Weather(day);
+      // if(!result.body && !result.body.daily) throw 'No data';
+      const weatherSummaries = result.body.daily.data.map(day => {
+        const summary = new Weather(day);
+        summary.save(location.id);
+        return summary;
       });
       // console.log(result);
-      console.log(query.id);
-      return weather.save()
-        .then(() => {
-          weather.id = query.id;
-          console.log('HI');
-          return weather;
-        });
+      // console.log(query.id);
+      // return weather.save()
+      //   .then(() => {
+      //     weather.id = query.id;
+      //     console.log('HI');
+      //     return weather;
+      //   });
+      return weatherSummaries;
     });
 };
 
-Weather.prototype.save = function(){
-  let SQL = `INSERT INTO weathers 
-    (forecast, time)
-    VALUES ($1, $2)
-    RETURNING id;`;
 
-  let values = Object.values(this);
-
-  return client.query(SQL, values);
-};
 
 //--------------------------------
 // Route Callbacks
@@ -197,17 +220,18 @@ let searchCoords = (request, response) => {
 //   })
 //   .catch(() => errorMessage());
 
-let searchWeather = (request, response) => {
+let getWeather = (request, response) => {
   // console.log(request.query.data);
   const weatherHandler = {
-    query: request.query.data,
+    location: request.query.data,
+    tableName: Weather.tableName,
     cacheHit: results => {
       console.log('Got the data Weather');
       response.send(results[0]);
     },
     cacheMiss: () => {
       console.log('Fetching Weather');
-      Weather.fetchWeather(request.query.data)
+      Weather.fetch(request.query.data)
         .then(results => response.send(results));
     }
   };
@@ -245,7 +269,7 @@ let searchEvents = (request, response) => {
 // Routes
 //--------------------------------
 app.get('/location', searchCoords);
-app.get('/weather', searchWeather);
+app.get('/weather', getWeather);
 app.get('/events', searchEvents);
 
 
