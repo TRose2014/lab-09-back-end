@@ -119,14 +119,16 @@ Location.prototype.save = function(){
 //--------------------------------
 
 Weather.lookup = handler => {
-  const SQL = `SELECT * FROM weathers WHERE search_query=$1;`;
-  const values = [handler.query];
+  const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
+  const values = [handler.query.id];
+  // console.log(values);
 
   return client.query(SQL, values)
     .then(results => {
       if(results.rowCount > 0){
         handler.cacheHit(results);
       }else{
+        // console.log(results);
         handler.cacheMiss(results);
       }
     })
@@ -134,12 +136,18 @@ Weather.lookup = handler => {
 };
 
 Weather.fetchWeather = (query) => {
+  // console.log(query);
   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${query.latitude},${query.longitude}`;
 
   return superagent.get(url)
     .then(result => {
-      if(!result.body.results.length) throw 'No data';
-      let weather = new Weather(query, result.body.results[0]);
+      // console.log(result.body);
+      if(!result.body && !result.body.daily) throw 'No data';
+      let weather = result.body.daily.data.map(day => {
+        return new Weather(day);
+      });
+      // console.log(result);
+      console.log(result.rows);
       return weather.save()
         .then(result => {
           weather.id = result.rows[0].id;
@@ -166,11 +174,11 @@ let searchCoords = (request, response) => {
   const locationHandler = {
     query: request.query.data,
     cacheHit: results => {
-      console.log('Got the data');
-      response.send(results[0]);
+      console.log('Got the data Locations');
+      response.send(results.rows[0]);
     },
     cacheMiss: () => {
-      console.log('Fetching');
+      console.log('Fetching Locations');
       Location.fetchLocation(request.query.data)
         .then(results => response.send(results));
     }
@@ -189,14 +197,15 @@ let searchCoords = (request, response) => {
 //   .catch(() => errorMessage());
 
 let searchWeather = (request, response) => {
+  // console.log(request.query.data);
   const weatherHandler = {
     query: request.query.data,
     cacheHit: results => {
-      console.log('Got the data');
+      console.log('Got the data Weather');
       response.send(results[0]);
     },
     cacheMiss: () => {
-      console.log('Fetching');
+      console.log('Fetching Weather');
       Weather.fetchWeather(request.query.data)
         .then(results => response.send(results));
     }
