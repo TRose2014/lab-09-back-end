@@ -147,10 +147,11 @@ Weather.fetchWeather = (query) => {
         return new Weather(day);
       });
       // console.log(result);
-      console.log(result.rows);
+      console.log(query.id);
       return weather.save()
-        .then(result => {
-          weather.id = result.rows[0].id;
+        .then(() => {
+          weather.id = query.id;
+          console.log('HI');
           return weather;
         });
     });
