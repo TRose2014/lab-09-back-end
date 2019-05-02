@@ -10,13 +10,39 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
+const pg = require('pg');
 
 //--------------------------------
 //Application setup
 //--------------------------------
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
+
+//--------------------------------
+// Database Config
+//--------------------------------
+
+// 1. Create a client with connection url
+const client = new pg.Client(process.env.DATABASE_URL);
+
+// 2. Connect client
+client.connect();
+
+// 3. Add event listeners
+client.on('err', err => console.error(err));
+
+//--------------------------------
+// Error Message
+//--------------------------------
+let errorMessage = () => {
+  let errorObj = {
+    status: 500,
+    responseText: 'Sorry something went wrong',
+  };
+  console.log(errorObj);
+  return errorObj;
+};
 
 //--------------------------------
 // Constructors Functions
@@ -92,17 +118,6 @@ app.get('/location', searchCoords);
 app.get('/weather', searchWeather);
 app.get('/events', searchEvents);
 
-//--------------------------------
-// Error Message
-//--------------------------------
-let errorMessage = () => {
-  let errorObj = {
-    status: 500,
-    responseText: 'Sorry something went wrong',
-  };
-  console.log(errorObj);
-  return errorObj;
-};
 
 //--------------------------------
 // Power On
