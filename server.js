@@ -157,13 +157,14 @@ Weather.fetchWeather = (query) => {
     });
 };
 
-Weather.prototype.save = function(){
+Weather.prototype.save = function(id){
   let SQL = `INSERT INTO weathers 
-    (forecast, time)
-    VALUES ($1, $2)
+    (forecast, time, location_id)
+    VALUES ($1, $2, $3)
     RETURNING id;`;
 
   let values = Object.values(this);
+  values.push(id);
 
   return client.query(SQL, values);
 };
