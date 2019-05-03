@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS weathers;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS movies;
 DROP TABLE IF EXISTS locations;
 
 CREATE TABLE locations (
@@ -14,6 +15,7 @@ CREATE TABLE weathers (
   id SERIAL PRIMARY KEY,
   forecast VARCHAR(255),
   time VARCHAR(255),
+  created_at BIGINT,
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
@@ -26,4 +28,18 @@ CREATE TABLE events (
   summary VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
+);
+
+CREATE TABLE movies (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255),
+  overview TEXT,
+  average_votes VARCHAR(255),
+  total_votes VARCHAR(255),
+  image_url TEXT,
+  popularity VARCHAR(255),
+  released_on VARCHAR(255),
+  location_id INTEGER NOT NULL,
+  FOREIGN KEY (location_id) REFERENCES locations (id)
 )
+
