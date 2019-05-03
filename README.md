@@ -6,9 +6,9 @@
 
 ## Number and name of feature: #1 Movies
 * Estimate of time needed to complete: 1 hour
-* Start time: 
-* Finish time: 
-* Actual time needed to complete: 
+* Start time: 8:30am
+* Finish time: 10:00am
+* Actual time needed to complete: 1.5 hours
 
 ## Number and name of feature: #2 Yelp
 * Estimate of time needed to complete: 1 hour
@@ -18,9 +18,9 @@
 
 ## Number and name of feature: #3 Cache
 * Estimate of time needed to complete: 1 hour 
-* Start time: 
-* Finish time: 
-* Actual time needed to complete: 
+* Start time: 10:45am
+* Finish time: 11:45am
+* Actual time needed to complete: 1 hour
 
 ## Overview
 This application is for users to put in and API key and location data in order to retrieve information from various APIs
@@ -32,15 +32,12 @@ This application is for users to put in and API key and location data in order t
 This application is built using Node and Express. We are using the Google Maps API, Yelp API, Dark Sky API, Event Brite API, Meetups API, and Weather API.
 
 ## Change Log
-05-03-2019:
-05-03-2019:
+05-03-2019: Movies info showing on client
+05-03-2019: Cach validation complete
 05-03-2019:
 
 ## Credits and Collaborations
 Tia and Felipe
-
-
-
 
 
 

@@ -18,6 +18,13 @@ const pg = require('pg');
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
+app.use(function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,content-type,application/json');
+  next();
+});
 
 //--------------------------------
 // Database Config
@@ -340,20 +347,6 @@ let getMovies = (request, response) => {
   };
   Movies.lookup(eventHandler);
 };
-
-
-//   let url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
-
-//   return superagent.get(url)
-//     .then(result => {
-//       const eventData = result.body.events.map(event => {
-//         return new Events(event);
-//       });
-
-//       response.send(eventData);
-//     })
-//     .catch(() => errorMessage());
-// };
 
 //--------------------------------
 // Routes
