@@ -1,7 +1,7 @@
 {
-  "name": "lab-08-back-end",
+  "name": "lab-09-back-end",
   "version": "1.0.0",
-  "description": "**Author**: Tia and Jeff **Version**: 1.1.0 (increment the patch/fix version number if you make more commits past your first submission)",
+  "description": "**Author**: Tia and Felipe **Version**: 1.1.0 (increment the patch/fix version number if you make more commits past your first submission)",
   "main": "server.js",
   "dependencies": {
     "cors": "^2.8.5",
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JeffLawrence1/lab-08-back-end.git"
+    "url": "git+https://github.com/TRose2014/lab-09-back-end.git"
   },
   "author": "",
   "license": "ISC",

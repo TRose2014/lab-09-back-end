@@ -1,3 +1,49 @@
+#Lab 09 - Cache Validation
+
+**Author**: Tia and Felipe
+**Version**: 1.1.0 (increment the patch/fix version number if you make more commits past your first submission)
+
+
+## Number and name of feature: #1 Movies
+* Estimate of time needed to complete: 1 hour
+* Start time: 
+* Finish time: 
+* Actual time needed to complete: 
+
+## Number and name of feature: #2 Yelp
+* Estimate of time needed to complete: 1 hour
+* Start time: 
+* Finish time: 
+* Actual time needed to complete: 
+
+## Number and name of feature: #3 Cache
+* Estimate of time needed to complete: 1 hour 
+* Start time: 
+* Finish time: 
+* Actual time needed to complete: 
+
+## Overview
+This application is for users to put in and API key and location data in order to retrieve information from various APIs
+
+## Getting Started
+<!-- What are the steps that a user must take in order to build this app on their own machine and get it running? -->
+
+## Architecture
+This application is built using Node and Express. We are using the Google Maps API, Yelp API, Dark Sky API, Event Brite API, Meetups API, and Weather API.
+
+## Change Log
+05-03-2019:
+05-03-2019:
+05-03-2019:
+
+## Credits and Collaborations
+Tia and Felipe
+
+
+
+
+
+
 #Lab 08 - SQL
 
 **Author**: Tia and Jeff
