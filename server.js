@@ -5,7 +5,7 @@
 //--------------------------------
 require('dotenv').config();
 
-//--------------------------------g
+//--------------------------------
 //--------------------------------
 const express = require('express');
 const cors = require('cors');
@@ -147,50 +147,39 @@ Weather.prototype.save = function(id){
 
   return client.query(SQL, values);
 };
-// Weather.lookup = handler => {
-//   const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
-//   const values = [handler.query.id];
-//   // console.log(values);
-
-//   return client.query(SQL, values)
-//     .then(results => {
-//       if(results.rowCount > 0){
-//         handler.cacheHit(results);
-//       }else{
-//         // console.log(results);
-//         handler.cacheMiss(results);
-//       }
-//     })
-//     .catch(console.error);
-// };
 
 Weather.fetch = (location) => {
-  // console.log(query);
+
   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
 
   return superagent.get(url)
     .then(result => {
-      // console.log(result.body);
-      // if(!result.body && !result.body.daily) throw 'No data';
       const weatherSummaries = result.body.daily.data.map(day => {
         const summary = new Weather(day);
         summary.save(location.id);
         return summary;
       });
-      // console.log(result);
-      // console.log(query.id);
-      // return weather.save()
-      //   .then(() => {
-      //     weather.id = query.id;
-      //     console.log('HI');
-      //     return weather;
-      //   });
       return weatherSummaries;
     });
 };
 
+//--------------------------------
+// Events
+//--------------------------------
+Events.tableName = 'events';
+Events.lookup = lookup;
 
+Events.prototype.save = function(id){
+  let SQL = `INSERT INTO events 
+    (link, event_name, event_date, summary, location_id)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id;`;
 
+  let values = Object.values(this);
+  values.push(id);
+
+  return client.query(SQL, values);
+};
 //--------------------------------
 // Route Callbacks
 //--------------------------------
@@ -210,16 +199,6 @@ let searchCoords = (request, response) => {
   Location.lookup(locationHandler);
 };
 
-
-// const data = request.query.data;
-// const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${data}&key=${process.env.GEOCODE_API_KEY}`;
-
-// return superagent.get(url)
-//   .then(result => {
-//     response.send(new Location(data, result.body.results[0]));
-//   })
-//   .catch(() => errorMessage());
-
 let getWeather = (request, response) => {
   // console.log(request.query.data);
   const weatherHandler = {
@@ -238,20 +217,7 @@ let getWeather = (request, response) => {
   Weather.lookup(weatherHandler);
 };
 
-// const data = request.query.data;
-// const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${data.latitude},${data.longitude}`;
-
-// return superagent.get(url)
-//   .then(result => {
-//     const dailyWeather = result.body.daily.data.map(day => {
-//       return new Weather(day);
-//     });
-
-//     response.send(dailyWeather);
-//   })
-//   .catch(() => errorMessage());
-
-let searchEvents = (request, response) => {
+let getEvents = (request, response) => {
   let url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
 
   return superagent.get(url)
@@ -270,7 +236,7 @@ let searchEvents = (request, response) => {
 //--------------------------------
 app.get('/location', searchCoords);
 app.get('/weather', getWeather);
-app.get('/events', searchEvents);
+app.get('/events', getEvents);
 
 
 //--------------------------------
