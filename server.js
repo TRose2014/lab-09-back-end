@@ -79,7 +79,7 @@ function Events(data) {
   let time = Date.parse(data.start.local);
   let newDate = new Date(time).toDateString();
   this.link = data.url;
-  this.name = data.name.text;
+  this.event_name = data.name.text;
   this.event_date = newDate;
   this.summary = data.summary;
 }
