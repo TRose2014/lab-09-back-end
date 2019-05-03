@@ -84,6 +84,17 @@ function Events(data) {
   this.summary = data.summary;
 }
 
+function Movies(data){
+  this.title = data.title;
+  this.released_on = data.release_date;
+  this.total_votes = data.vote_count;
+  this.average_votes = data.vote_average;
+  this.popularity = data.popularity;
+  this.image_url = data.poster_path;
+  this.overview = data.overview;
+
+}
+
 //--------------------------------
 // Location
 //--------------------------------
@@ -197,9 +208,50 @@ Events.fetch = (location) => {
       return eventSummaries;
     });
 };
+
+//--------------------------------
+// Movies
+//--------------------------------
+
+Movies.tableName = 'movies';
+Movies.lookup = lookup;
+
+// Movies.prototype.save = function(id){
+//   let SQL = `INSERT INTO movies 
+//     (title, released_on, total_votes, average_votes, popularity, image_url, overview location_id)
+//     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+//     RETURNING id;`;
+
+//   let values = Object.values(this);
+//   values.push(id);
+
+//   return client.query(SQL, values);
+// };
+
+Movies.fetch = (location) => {
+  console.log('here in movies fetch');
+  // console.log(request.query.data.formatted_query);
+  // console.log(location);
+  // const url = `https://api.themoviedb.org/3/movie/550?api_key=${process.env.MOVIE_API_KEY}`;
+  const url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${process.env.MOVIE_API_KEY}&language=en-US&page=1`;
+  return superagent.get(url)
+    .then(result => {
+      console.log(result.body.results[0]);
+      const moviesSummaries = result.body.results.map(event => {
+        const summary = new Movies(event);
+        // summary.save(location.id);
+        return summary;
+      });
+      return moviesSummaries;
+    });
+};
+
+
 //--------------------------------
 // Route Callbacks
 //--------------------------------
+
+//-----------Locations
 let searchCoords = (request, response) => {
   const locationHandler = {
     query: request.query.data,
@@ -216,6 +268,7 @@ let searchCoords = (request, response) => {
   Location.lookup(locationHandler);
 };
 
+//---------------Weather
 let getWeather = (request, response) => {
   // console.log(request.query.data);
   const weatherHandler = {
@@ -234,6 +287,7 @@ let getWeather = (request, response) => {
   Weather.lookup(weatherHandler);
 };
 
+//---------------Events
 let getEvents = (request, response) => {
   const eventHandler = {
     location: request.query.data,
@@ -249,6 +303,24 @@ let getEvents = (request, response) => {
     }
   };
   Events.lookup(eventHandler);
+};
+
+//---------------Movies
+let getMovies = (request, response) => {
+  const eventHandler = {
+    location: request.query.data,
+    tableName: Movies.tableName,
+    cacheHit: results => {
+      console.log('Got the data Movies');
+      response.send(results[0]);
+    },
+    cacheMiss: () => {
+      console.log('Fetching Movies');
+      Movies.fetch(request.query.data)
+        .then(results => response.send(results));
+    }
+  };
+  Movies.lookup(eventHandler);
 };
 
 
@@ -271,6 +343,7 @@ let getEvents = (request, response) => {
 app.get('/location', searchCoords);
 app.get('/weather', getWeather);
 app.get('/events', getEvents);
+app.get('/movies', getMovies);
 
 
 //--------------------------------
