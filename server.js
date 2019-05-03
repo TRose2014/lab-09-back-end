@@ -86,12 +86,12 @@ function Events(data) {
 
 function Movies(data){
   this.title = data.title;
-  this.released_on = data.release_date;
-  this.total_votes = data.vote_count;
-  this.average_votes = data.vote_average;
-  this.popularity = data.popularity;
-  this.image_url = data.poster_path;
   this.overview = data.overview;
+  this.average_votes = data.vote_average;
+  this.total_votes = data.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/original${data.poster_path}`;
+  this.popularity = data.popularity;
+  this.released_on = data.release_date;
 
 }
 
@@ -216,17 +216,17 @@ Events.fetch = (location) => {
 Movies.tableName = 'movies';
 Movies.lookup = lookup;
 
-// Movies.prototype.save = function(id){
-//   let SQL = `INSERT INTO movies 
-//     (title, released_on, total_votes, average_votes, popularity, image_url, overview location_id)
-//     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-//     RETURNING id;`;
+Movies.prototype.save = function(id){
+  let SQL = `INSERT INTO movies 
+    (title, overview, average_votes, total_votes, image_url, popularity, released_on,  location_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id;`;
 
-//   let values = Object.values(this);
-//   values.push(id);
+  let values = Object.values(this);
+  values.push(id);
 
-//   return client.query(SQL, values);
-// };
+  return client.query(SQL, values);
+};
 
 Movies.fetch = (location) => {
   console.log('here in movies fetch');
@@ -239,7 +239,7 @@ Movies.fetch = (location) => {
       console.log(result.body.results[0]);
       const moviesSummaries = result.body.results.map(event => {
         const summary = new Movies(event);
-        // summary.save(location.id);
+        summary.save(location.id);
         return summary;
       });
       return moviesSummaries;
