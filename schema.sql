@@ -20,7 +20,7 @@ CREATE TABLE weathers (
 
 CREATE TABLE events (
   id SERIAL PRIMARY KEY,
-  link VARCHAR(255),
+  link TEXT,
   event_name VARCHAR(255),
   event_date VARCHAR(255),
   summary VARCHAR(255),

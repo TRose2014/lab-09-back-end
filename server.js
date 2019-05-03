@@ -182,11 +182,14 @@ Events.prototype.save = function(id){
 };
 
 Events.fetch = (location) => {
-
-  const url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${location.query.data.formatted_query}`;
+  console.log('here in event fetch');
+  // console.log(request.query.data.formatted_query);
+  // console.log(location);
+  const url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${location.formatted_query}`;
   return superagent.get(url)
     .then(result => {
-      const eventSummaries = result.body.events.data.map(event => {
+      // console.log(result.body.events.data);
+      const eventSummaries = result.body.events.map(event => {
         const summary = new Events(event);
         summary.save(location.id);
         return summary;
@@ -241,6 +244,7 @@ let getEvents = (request, response) => {
     },
     cacheMiss: () => {
       console.log('Fetching Event');
+      // console.log(request.query.data);
       Events.fetch(request.query.data)
         .then(results => response.send(results));
     }
