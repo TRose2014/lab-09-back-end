@@ -313,7 +313,7 @@ let getEvents = (request, response) => {
     tableName: Events.tableName,
     cacheHit: results => {
       console.log('Got the data Events');
-      response.send(results[0]);
+      response.send(results.rows);
     },
     cacheMiss: () => {
       console.log('Fetching Event');
@@ -331,7 +331,7 @@ let getMovies = (request, response) => {
     tableName: Movies.tableName,
     cacheHit: results => {
       console.log('Got the data Movies');
-      response.send(results[0]);
+      response.send(results.rows);
     },
     cacheMiss: () => {
       console.log('Fetching Movies');
