@@ -180,6 +180,20 @@ Events.prototype.save = function(id){
 
   return client.query(SQL, values);
 };
+
+Events.fetch = (location) => {
+
+  const url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${location.query.data.formatted_query}`;
+  return superagent.get(url)
+    .then(result => {
+      const eventSummaries = result.body.events.data.map(event => {
+        const summary = new Events(event);
+        summary.save(location.id);
+        return summary;
+      });
+      return eventSummaries;
+    });
+};
 //--------------------------------
 // Route Callbacks
 //--------------------------------
@@ -218,18 +232,35 @@ let getWeather = (request, response) => {
 };
 
 let getEvents = (request, response) => {
-  let url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
-
-  return superagent.get(url)
-    .then(result => {
-      const eventData = result.body.events.map(event => {
-        return new Events(event);
-      });
-
-      response.send(eventData);
-    })
-    .catch(() => errorMessage());
+  const eventHandler = {
+    location: request.query.data,
+    tableName: Events.tableName,
+    cacheHit: results => {
+      console.log('Got the data Events');
+      response.send(results[0]);
+    },
+    cacheMiss: () => {
+      console.log('Fetching Event');
+      Events.fetch(request.query.data)
+        .then(results => response.send(results));
+    }
+  };
+  Events.lookup(eventHandler);
 };
+
+
+//   let url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
+
+//   return superagent.get(url)
+//     .then(result => {
+//       const eventData = result.body.events.map(event => {
+//         return new Events(event);
+//       });
+
+//       response.send(eventData);
+//     })
+//     .catch(() => errorMessage());
+// };
 
 //--------------------------------
 // Routes
