@@ -171,7 +171,7 @@ Events.lookup = lookup;
 
 Events.prototype.save = function(id){
   let SQL = `INSERT INTO events 
-    (link, event_name, event_date, summary, location_id)
+    (link, name, event_date, summary, location_id)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING id;`;
 
@@ -244,7 +244,6 @@ let getEvents = (request, response) => {
     },
     cacheMiss: () => {
       console.log('Fetching Event');
-      // console.log(request.query.data);
       Events.fetch(request.query.data)
         .then(results => response.send(results));
     }
