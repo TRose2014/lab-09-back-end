@@ -60,6 +60,17 @@ let lookup = (handler) => {
     })
     .catch(errorMessage);
 };
+
+let deleteByLocationId = (table, location_id) => {
+  const SQL = `DELETE FROM ${table} WHERE location_id=${location_id}`;
+
+  return client.query(SQL);
+};
+
+const timeouts = {
+  weather: 15 * 1000,
+  // events: 15 * 1000
+};
 //--------------------------------
 // Constructors Functions
 //--------------------------------
@@ -73,7 +84,12 @@ function Location(query, geoData) {
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toDateString();
+  this.created_at = Date.now();
 }
+
+Weather.tableName = 'weathers';
+Weather.lookup = lookup;
+Weather.deleteByLocationId = deleteByLocationId;
 
 function Events(data) {
   let time = Date.parse(data.start.local);
@@ -144,14 +160,10 @@ Location.prototype.save = function(){
 //--------------------------------
 // Weather
 //--------------------------------
-Weather.tableName = 'weathers';
-Weather.lookup = lookup;
-
 Weather.prototype.save = function(id){
   let SQL = `INSERT INTO weathers 
-    (forecast, time, location_id)
-    VALUES ($1, $2, $3)
-    RETURNING id;`;
+    (forecast, time, created_at, location_id)
+    VALUES ($1, $2, $3, $4);`;
 
   let values = Object.values(this);
   values.push(id);
@@ -230,9 +242,6 @@ Movies.prototype.save = function(id){
 
 Movies.fetch = (location) => {
   console.log('here in movies fetch');
-  // console.log(request.query.data.formatted_query);
-  // console.log(location);
-  // const url = `https://api.themoviedb.org/3/movie/550?api_key=${process.env.MOVIE_API_KEY}`;
   const url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${process.env.MOVIE_API_KEY}&language=en-US&page=1`;
   return superagent.get(url)
     .then(result => {
@@ -274,14 +283,23 @@ let getWeather = (request, response) => {
   const weatherHandler = {
     location: request.query.data,
     tableName: Weather.tableName,
-    cacheHit: results => {
-      console.log('Got the data Weather');
-      response.send(results[0]);
+    
+    cacheHit: function(result){
+      let ageOfResults = (Date.now() - result.rows[0].created_at);
+      if(ageOfResults > timeouts.weather){
+        console.log('weather cache invaild');
+        Weather.deleteByLocationId(Weather.tableName, request.query.data.id);
+        this.cacheMiss();
+      }else{
+        console.log('weather cache valid');
+        response.send(result.rows);
+      }
     },
     cacheMiss: () => {
       console.log('Fetching Weather');
       Weather.fetch(request.query.data)
-        .then(results => response.send(results));
+        .then(results => response.send(results))
+        .catch(console.error);
     }
   };
   Weather.lookup(weatherHandler);
