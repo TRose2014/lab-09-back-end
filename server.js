@@ -70,7 +70,9 @@ let deleteByLocationId = (table, location_id) => {
 
 const timeouts = {
   weather: 15 * 1000,
-  // events: 15 * 1000
+  events: 15 * 1000,
+  movies: 15 * 1000,
+  restaurants: 15 * 1000,
 };
 //--------------------------------
 // Constructors Functions
@@ -99,6 +101,7 @@ function Events(data) {
   this.name = data.name.text;
   this.event_date = newDate;
   this.summary = data.summary;
+  this.created_at = Date.now();
 }
 
 function Movies(data){
@@ -109,8 +112,19 @@ function Movies(data){
   this.image_url = `https://image.tmdb.org/t/p/original${data.poster_path}`;
   this.popularity = data.popularity;
   this.released_on = data.release_date;
+  this.created_at = Date.now();
 
 }
+
+function Restaurants(data) {
+  this.name = data.name;
+  this.rating = data.rating;
+  this.price = data.price;
+  this.url = data.url;
+  this.image_url = data.image_url;
+  this.created_at = Date.now();
+}
+
 
 //--------------------------------
 // Location
@@ -143,7 +157,8 @@ Location.fetchLocation = (query) => {
         .then(result => {
           location.id = result.rows[0].id;
           return location;
-        });
+        })
+        .catch(console.error);
     });
 };
 
@@ -184,7 +199,9 @@ Weather.fetch = (location) => {
         return summary;
       });
       return weatherSummaries;
-    });
+    })
+    .catch(console.error);
+
 };
 
 //--------------------------------
@@ -195,8 +212,8 @@ Events.lookup = lookup;
 
 Events.prototype.save = function(id){
   let SQL = `INSERT INTO events 
-    (link, name, event_date, summary, location_id)
-    VALUES ($1, $2, $3, $4, $5)
+    (link, name, event_date, summary, created_at, location_id)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING id;`;
 
   let values = Object.values(this);
@@ -219,7 +236,9 @@ Events.fetch = (location) => {
         return summary;
       });
       return eventSummaries;
-    });
+    })
+    .catch(console.error);
+
 };
 
 //--------------------------------
@@ -228,11 +247,12 @@ Events.fetch = (location) => {
 
 Movies.tableName = 'movies';
 Movies.lookup = lookup;
+Movies.deleteByLocationId = deleteByLocationId;
 
 Movies.prototype.save = function(id){
   let SQL = `INSERT INTO movies 
-    (title, overview, average_votes, total_votes, image_url, popularity, released_on,  location_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    (title, overview, average_votes, total_votes, image_url, popularity, released_on, created_at,  location_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id;`;
 
   let values = Object.values(this);
@@ -253,7 +273,49 @@ Movies.fetch = (location) => {
         return summary;
       });
       return moviesSummaries;
+    })
+    .catch(console.error);
+
+};
+
+
+//--------------------------------
+// Restaurants
+//--------------------------------
+
+Restaurants.tableName = 'restaurants';
+Restaurants.lookup = lookup;
+Restaurants.deleteByLocationId = deleteByLocationId;
+
+Restaurants.prototype.save = function(id){
+  let SQL = `INSERT INTO restaurants 
+    (name, rating, price, url, image_url, created_at, location_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id;`;
+
+  let values = Object.values(this);
+  values.push(id);
+
+  return client.query(SQL, values);
+};
+
+Restaurants.fetch = (location) => {
+  console.log('here in restaurants fetch');
+  const url = `https://api.yelp.com/v3/businesses/search?location=${location.search_query}`;
+  return superagent.get(url)
+    .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
+    .then(result => {
+      const restaurantsSummaries = result.body.businesses.map(review => {
+        const summary = new Restaurants(review);
+        summary.save(location.id);
+        return summary;
+      });
+      return restaurantsSummaries;
+    })
+    .catch(error => {
+      console.log(error);
     });
+
 };
 
 
@@ -272,7 +334,9 @@ let searchCoords = (request, response) => {
     cacheMiss: () => {
       console.log('Fetching Locations');
       Location.fetchLocation(request.query.data)
-        .then(results => response.send(results));
+        .then(results => response.send(results))
+        .catch(console.error);
+
     }
   };
   Location.lookup(locationHandler);
@@ -318,7 +382,9 @@ let getEvents = (request, response) => {
     cacheMiss: () => {
       console.log('Fetching Event');
       Events.fetch(request.query.data)
-        .then(results => response.send(results));
+        .then(results => response.send(results))
+        .catch(console.error);
+
     }
   };
   Events.lookup(eventHandler);
@@ -329,17 +395,52 @@ let getMovies = (request, response) => {
   const eventHandler = {
     location: request.query.data,
     tableName: Movies.tableName,
-    cacheHit: results => {
-      console.log('Got the data Movies');
-      response.send(results.rows);
+    cacheHit: function(result){
+      let ageOfResults = (Date.now() - result.rows[0].created_at);
+      if(ageOfResults > timeouts.movies){
+        console.log('movies cache was invalid');
+        Movies.deleteByLocationId(Movies.tableName, request.query.data.id);
+        this.cacheMiss;
+      }else{
+        console.log('movies cache was valid');
+        response.send(result.rows);
+      }
     },
     cacheMiss: () => {
       console.log('Fetching Movies');
       Movies.fetch(request.query.data)
-        .then(results => response.send(results));
+        .then(results => response.send(results))
+        .catch(console.error);
     }
   };
   Movies.lookup(eventHandler);
+};
+
+//---------------Restaurants
+
+let getRestaurants = (request, response) => {
+  const eventHandler = {
+    location: request.query.data,
+    tableName: Restaurants.tableName,
+    cacheHit: function(result){
+      let ageOfResults = (Date.now() - result.rows[0].created_at);
+      if(ageOfResults > timeouts.restaurants){
+        console.log('restaurants cache was invalid');
+        Restaurants.deleteByLocationId(Restaurants.tableName, request.query.data.id);
+        this.cacheMiss;
+      }else{
+        console.log('restaurants cache was valid');
+        response.send(result.rows);
+      }
+    },
+    cacheMiss: () => {
+      console.log('Fetching restaurants');
+      Restaurants.fetch(request.query.data)
+        .then(results => response.send(results))
+        .catch(console.error);
+    }
+  };
+  Restaurants.lookup(eventHandler);
 };
 
 //--------------------------------
@@ -349,6 +450,7 @@ app.get('/location', searchCoords);
 app.get('/weather', getWeather);
 app.get('/events', getEvents);
 app.get('/movies', getMovies);
+app.get('/yelp', getRestaurants);
 
 
 //--------------------------------
